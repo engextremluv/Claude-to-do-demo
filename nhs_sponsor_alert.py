@@ -87,7 +87,7 @@ MAX_PAGES = 5                   # search-result pages to scan (about 20 jobs eac
 # includes jobs whose sponsorship is unclear so you get a real digest to eyeball,
 # caps that digest, and prints a couple of diagnostic lines per advert into the
 # log. Flip to False once the emails look right, to go back to strict mode.
-DEBUG = True
+DEBUG = False
 DIGEST_CAP = 15                 # max jobs per email while DEBUG is on
 
 REQUEST_DELAY = 1.5             # seconds between requests, be polite
