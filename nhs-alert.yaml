@@ -1,0 +1,48 @@
+name: NHS sponsorship alert
+
+on:
+  schedule:
+    # Twice a day. Times are UTC. Nigeria (WAT) is UTC+1, so these are
+    # 07:00 and 17:00 your local time. Change the two times if you like.
+    - cron: "0 6 * * *"
+    - cron: "0 16 * * *"
+  workflow_dispatch:   # lets you run it manually from the Actions tab
+
+# Allow the job to commit the updated seen_jobs.json back to the repo.
+permissions:
+  contents: write
+
+concurrency:
+  group: nhs-alert
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run alert
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python nhs_sponsor_alert.py
+
+      - name: Save state
+        run: |
+          if [[ -n "$(git status --porcelain seen_jobs.json)" ]]; then
+            git config user.name  "nhs-alert-bot"
+            git config user.email "actions@github.com"
+            git add seen_jobs.json
+            git commit -m "Update seen jobs [skip ci]"
+            git push
+          else
+            echo "No state change."
+          fi
