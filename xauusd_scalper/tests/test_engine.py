@@ -123,3 +123,27 @@ def test_calc_position_size_respects_min_and_max_lot():
 def test_calc_position_size_zero_stop_distance_returns_zero():
     risk_cfg = _risk_cfg()
     assert calc_position_size(10_000.0, 0.0, risk_cfg) == 0.0
+
+
+def test_calc_position_size_returns_zero_when_account_is_bankrupt():
+    risk_cfg = _risk_cfg()
+    assert calc_position_size(0.0, 1.0, risk_cfg) == 0.0
+    assert calc_position_size(-500.0, 1.0, risk_cfg) == 0.0
+
+
+def test_engine_stops_opening_new_trades_once_balance_is_bankrupt():
+    # A short with a huge stop that blows the account, followed by more
+    # signals: no further trades should open once balance <= 0.
+    risk_cfg = _risk_cfg(initial_balance=100.0, risk_per_trade_pct=100_000.0, max_lot=100.0)
+    rows = [
+        dict(open=2000.0, high=2000.1, low=1999.9, close=2000.0, signal=1, sl_dist=50.0, tp_dist=1000.0),
+        dict(open=2000.1, high=2000.2, low=1900.0, close=1950.0, signal=1, sl_dist=1.0, tp_dist=2.0),
+        dict(open=1950.0, high=1951.0, low=1949.0, close=1950.0, signal=0, sl_dist=pd.NA, tp_dist=pd.NA),
+    ]
+    df = _make_df(rows)
+    events = list(simulate(df, risk_cfg))
+    assert events[1]["closed"] is not None
+    assert events[1]["balance"] <= 0
+    # No new position should have opened on bar 2 despite queuing a signal on bar 1's close.
+    assert events[2]["opened"] is None
+    assert events[2]["position"] is None

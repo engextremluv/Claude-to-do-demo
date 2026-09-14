@@ -82,6 +82,18 @@ Point `--data` at any CSV with a datetime column (`datetime`/`timestamp`/
 1-minute XAUUSD candles, e.g. exported from your broker/platform or a market
 data provider. Column names are matched case-insensitively.
 
+If your source data is a bid/ask JSON feed instead (records shaped like
+`{"ts": <unix seconds>, "o","h","l","c": <bid OHLC>, "ao","ah","al","ac":
+<ask OHLC>, "v": <volume>}`, optionally gzip-compressed), convert it first:
+
+```bash
+python -m xauusd_scalper.cli import-json --input xauusd_2025.json.gz --out data/xauusd_2025_1min.csv
+```
+
+This writes mid-price OHLCV (average of bid/ask) and also prints the actual
+observed spread (mean/median/p95) from the data — pass that as `--spread` to
+`backtest`/`paper` instead of the $0.20 default for a realistic cost model.
+
 ## Tuning
 
 Key parameters, overridable via CLI flags or a `--config config.json` file

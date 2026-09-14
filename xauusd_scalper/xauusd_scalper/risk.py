@@ -10,13 +10,17 @@ def calc_position_size(balance: float, stop_distance: float, cfg: RiskConfig) ->
     stop-loss (`stop_distance` USD away from entry) is hit, rounded down to the
     nearest `lot_step` and clamped to [min_lot, max_lot].
     """
-    if stop_distance <= 0:
+    if stop_distance <= 0 or balance <= 0:
         return 0.0
 
     risk_amount = balance * (cfg.risk_per_trade_pct / 100.0)
     raw_lots = risk_amount / (stop_distance * cfg.contract_size)
+    if raw_lots <= 0:
+        return 0.0
 
     steps = int(raw_lots / cfg.lot_step)
     lots = steps * cfg.lot_step
+    # Only clamp UP to the broker's minimum when sizing intended a real (if
+    # tiny) position — never force a trade once there's no risk capital left.
     lots = max(cfg.min_lot, min(cfg.max_lot, lots))
     return round(lots, 8)

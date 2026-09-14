@@ -15,6 +15,7 @@ import sys
 from .backtest import format_report, run_backtest
 from .config import RiskConfig, StrategyConfig, load_config
 from .data import generate_synthetic_data, load_ohlcv_csv
+from .import_data import convert_to_ohlcv_csv
 from .paper import run_paper_trading
 
 
@@ -73,6 +74,18 @@ def cmd_generate_sample(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import_json(args: argparse.Namespace) -> int:
+    summary = convert_to_ohlcv_csv(args.input, args.out)
+    sp = summary["spread"]
+    print(f"Converted {summary['bars']} bars ({summary['start']} .. {summary['end']}) to {args.out}")
+    print(
+        f"Observed spread (USD/oz): mean={sp['mean']:.3f} median={sp['median']:.3f} "
+        f"p95={sp['p95']:.3f} min={sp['min']:.3f} max={sp['max']:.3f}"
+    )
+    print(f"Consider passing --spread {sp['median']:.2f} (or similar) to backtest/paper for a realistic cost model.")
+    return 0
+
+
 def cmd_backtest(args: argparse.Namespace) -> int:
     strategy_cfg, risk_cfg = _build_configs(args)
     df = load_ohlcv_csv(args.data)
@@ -101,6 +114,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_gen.add_argument("--start-price", type=float, default=1950.0)
     p_gen.add_argument("--seed", type=int, default=42)
     p_gen.set_defaults(func=cmd_generate_sample)
+
+    p_import = sub.add_parser(
+        "import-json", help="Convert a bid/ask 1-min JSON feed (ts/o/h/l/c/ao/ah/al/ac/v, optionally .gz) to our OHLCV CSV format"
+    )
+    p_import.add_argument("--input", required=True, help="Path to the source .json or .json.gz file")
+    p_import.add_argument("--out", required=True, help="Path to write the converted OHLCV CSV")
+    p_import.set_defaults(func=cmd_import_json)
 
     p_bt = sub.add_parser("backtest", help="Run a full-history backtest over a CSV of 1-min candles")
     p_bt.add_argument("--data", required=True, help="Path to OHLCV CSV")

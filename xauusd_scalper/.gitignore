@@ -3,4 +3,5 @@ __pycache__/
 .venv/
 output/
 sample_data/*.csv
+data_real/
 .pytest_cache/
