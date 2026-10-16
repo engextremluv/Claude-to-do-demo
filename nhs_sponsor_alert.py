@@ -64,7 +64,7 @@ SEND_WHEN_EMPTY = False
 STATE_FILE = Path("seen_jobs.json")
 
 # DEBUG: verbose logging + saves a sample advert page. Set False once happy.
-DEBUG = True
+DEBUG = False
 
 USER_AGENT = os.environ.get(
     "NHS_USER_AGENT",
